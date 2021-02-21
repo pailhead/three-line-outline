@@ -1,0 +1,38 @@
+{
+  "name": "three-thick-lines",
+  "version": "0.0.14",
+  "description": "Three.js thick lines rewritten with typescript",
+  "main": "dist/bundle.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "webpack serve --open --config webpack.dev.js",
+    "build": "webpack",
+    "test": "jest"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "author": "Dusan Bosnjak (pailhead)",
+  "license": "MIT",
+  "peerDependencies": {},
+  "devDependencies": {
+    "@types/jest": "^26.0.20",
+    "@types/three": "^0.125.1",
+    "@typescript-eslint/eslint-plugin": "^4.15.0",
+    "@typescript-eslint/parser": "^4.15.0",
+    "eslint": "^7.19.0",
+    "eslint-config-prettier": "^7.2.0",
+    "eslint-plugin-prettier": "^3.3.1",
+    "html-webpack-plugin": "^5.0.0",
+    "jest": "^26.6.3",
+    "prettier": "^2.2.1",
+    "three": "^0.125.2",
+    "ts-jest": "^26.5.1",
+    "ts-loader": "^8.0.17",
+    "typescript": "^4.1.5",
+    "webpack": "^5.21.2",
+    "webpack-cli": "^4.5.0",
+    "webpack-dev-server": "^3.11.2"
+  }
+}
