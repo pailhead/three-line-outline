@@ -45,7 +45,7 @@ animate()
 
 // const pg = new PlaneBufferGeometry(2, 2, 1, 1)
 const pg = new SphereBufferGeometry(1, 32, 16)
-const cg = new CylinderBufferGeometry(1, 1, 1, 14, 1, true)
+const cg = new CylinderBufferGeometry(1, 5, 10, 3, 1, false)
 
 const pm = new Mesh(
   pg,
@@ -66,16 +66,16 @@ const cm = new Mesh(
   }),
 )
 
-const po = new OutlineMesh(pm)
+// const po = new OutlineMesh(pm)
 const co = new OutlineMesh(cm)
-po.add(pm)
-co.add(cm)
+// po.add(pm)
+// co.add(cm)
 
 console.log(co)
 
-po.position.x = 2
+// po.position.x = 2
 co.position.x = -2
-scene.add(po)
+// scene.add(po)
 scene.add(co)
 
 // const g = new BufferGeometry()

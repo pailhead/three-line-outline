@@ -5,6 +5,8 @@ import {
   BufferGeometry,
   LineSegments,
   Mesh,
+  MeshBasicMaterial,
+  SphereBufferGeometry,
   Vector3,
 } from 'three'
 import { OutlineMaterial } from './OutlineMaterial'
@@ -21,7 +23,7 @@ interface IEdgeArrays {
   n1Array: number[]
 }
 const NULL_VECTOR = new Vector3()
-const WELD_FACTOR = 100000
+const WELD_FACTOR = 1000
 
 export class OutlineMesh extends LineSegments {
   constructor(mesh: Mesh, outlineMaterial = new OutlineMaterial()) {
@@ -38,11 +40,11 @@ export class OutlineMesh extends LineSegments {
     g.setAttribute('aN1', new BufferAttribute(new Float32Array(n1Array), 3))
   }
   private _extractIndexed(geometry: BufferGeometry): IEdgeArrays {
-    const edges = this._extractEdgesFromIndex(
+    const { weldedIndices, weldedVertices } = this._weldIndexed(
       geometry.index!,
       geometry.attributes.position as BufferAttribute,
     )
-    const { position } = geometry.attributes
+    const edges = this._extractEdgesFromIndex(weldedIndices, weldedVertices)
     const vArray: number[] = []
     const n0Array: number[] = []
     const n1Array: number[] = []
@@ -51,7 +53,7 @@ export class OutlineMesh extends LineSegments {
       const _index = index * 3
       n0Array.push(n0.x, n0.y, n0.z)
       n1Array.push(n1.x, n1.y, n1.z)
-      for (let i = 0; i < 3; i++) vArray.push(position.array[_index + i])
+      for (let i = 0; i < 3; i++) vArray.push(weldedVertices[_index + i])
     }
 
     edges.forEach(({ a, b, n0, n1 }) => {
@@ -60,54 +62,86 @@ export class OutlineMesh extends LineSegments {
     })
     return { vArray, n0Array, n1Array }
   }
-  private _extractEdgesFromIndex(
+  private _weldIndexed(
     indexBuffer: BufferAttribute,
     positionBuffer: BufferAttribute,
-  ): IEdge[] {
-    const { array, count } = indexBuffer
-
-    //weld
+  ) {
     const map: Record<string, number> = {}
-    const weldedIndices = []
-    for (let t = 0, c = 0; t < count; t += 3) {
-      for (let i = 0; i < 3; i++) {
-        const vi = array[t + i]
-        const ti3 = vi * 3
+    const weldedVerticesMap: Record<number, number> = {}
+    const weldedVertices: number[] = []
+    const weldedIndices: number[] = []
+    const mm = new MeshBasicMaterial({ color: 'red' })
+    const _sg = new SphereBufferGeometry(0.1, 4, 2)
 
-        const xyz = [
-          positionBuffer.array[ti3],
-          positionBuffer.array[ti3 + 1],
-          positionBuffer.array[ti3 + 2],
-        ].map((v) => Math.floor(v * WELD_FACTOR))
-
-        const key = xyz.join(':')
-        if (map[key] === undefined) map[key] = c++
-        weldedIndices.push(map[key])
+    for (let v = 0, c = 0; v < positionBuffer.count; v++) {
+      const v3 = v * 3
+      const xyz = [
+        positionBuffer.array[v3],
+        positionBuffer.array[v3 + 1],
+        positionBuffer.array[v3 + 2],
+      ].map((v) => Math.round(v * WELD_FACTOR))
+      const key = xyz.join(':')
+      if (map[key] === undefined) {
+        map[key] = c++
+        weldedVertices.push(
+          positionBuffer.array[v3],
+          positionBuffer.array[v3 + 1],
+          positionBuffer.array[v3 + 2],
+        )
+        const m = new Mesh(_sg, mm)
+        m.position.set(
+          positionBuffer.array[v3],
+          positionBuffer.array[v3 + 1],
+          positionBuffer.array[v3 + 2],
+        )
+        this.add(m)
       }
+      weldedVerticesMap[v] = map[key]
     }
+    for (let t = 0; t < indexBuffer.count; t += 3)
+      for (let i = 0; i < 3; i++) {
+        const source = indexBuffer.array[t + i]
+        weldedIndices.push(weldedVerticesMap[source])
+      }
 
+    return { weldedVertices, weldedIndices }
+  }
+  private _extractEdgesFromIndex(
+    indexBuffer: number[],
+    positionBuffer: number[],
+  ): IEdge[] {
     const faceNormals: Vector3[] = []
     const av = new Vector3()
     const bv = new Vector3()
     const cv = new Vector3()
-    for (let t = 0; t < count; t += 3) {
+    const _sg = new SphereBufferGeometry(0.1, 4, 2)
+    const mm = new MeshBasicMaterial({ color: 'yellow' })
+
+    for (let t = 0; t < indexBuffer.length; t += 3) {
       const normal = new Vector3()
-      av.fromArray(positionBuffer.array, array[t] * 3)
-      bv.fromArray(positionBuffer.array, array[t + 1] * 3)
-      cv.fromArray(positionBuffer.array, array[t + 2] * 3)
+      av.fromArray(positionBuffer, indexBuffer[t] * 3)
+      bv.fromArray(positionBuffer, indexBuffer[t + 1] * 3)
+      cv.fromArray(positionBuffer, indexBuffer[t + 2] * 3)
+      const m = new Mesh(_sg, mm)
+      m.position.add(av)
+      m.position.add(bv)
+      m.position.add(cv)
+      m.position.multiplyScalar(1 / 3)
+      this.add(m)
       normal.crossVectors(bv.sub(av), cv.sub(av))
       faceNormals.push(normal.normalize())
+      this.add(new ArrowHelper(normal, m.position))
     }
 
     const edgeFaceMap: Record<number, Record<number, number>> = {}
     const halfEdges: [number, number][] = []
 
-    for (let t = 0; t < count / 3; t++) {
+    for (let t = 0; t < indexBuffer.length / 3; t++) {
       const t3 = t * 3
       for (let i = 0; i < 3; i++) {
         const next = (i + 1) % 3
-        const a = array[t3 + i]
-        const b = array[t3 + next]
+        const a = indexBuffer[t3 + i]
+        const b = indexBuffer[t3 + next]
         if (!edgeFaceMap[a]) edgeFaceMap[a] = {}
         edgeFaceMap[a][b] = t
         halfEdges.push([a, b])
@@ -121,10 +155,7 @@ export class OutlineMesh extends LineSegments {
       if (!duplicateMap[a]) duplicateMap[a] = {}
       if (!duplicateMap[b]) duplicateMap[b] = {}
 
-      if (duplicateMap[a][b]) {
-        console.log('dup')
-        return
-      }
+      if (duplicateMap[a][b]) return
 
       const f0 = edgeFaceMap[a][b]
       const f1 = edgeFaceMap[b][a]
@@ -132,21 +163,23 @@ export class OutlineMesh extends LineSegments {
       const isOutline = f0 !== undefined && f1 !== undefined
       const n0 = isOutline ? faceNormals[f0] : NULL_VECTOR
       const n1 = isOutline ? faceNormals[f1] : NULL_VECTOR
-      console.log(isOutline, n0.toArray(), n1.toArray())
+
       edges.push({ a, b, n0, n1 })
       // const av = new Vector3().fromArray(positionBuffer.array, a * 3)
       // const bv = new Vector3().fromArray(positionBuffer.array, b * 3)
-      // if (isOutline) {
-      //   this.add(new ArrowHelper(n0, av, Number(isOutline), 'yellow'))
-      //   this.add(new ArrowHelper(n1, av, Number(isOutline), 'blue'))
-      //   this.add(new ArrowHelper(n0, bv, Number(isOutline), 'yellow'))
-      //   this.add(new ArrowHelper(n1, bv, Number(isOutline), 'blue'))
-      // }
+      if (isOutline) {
+        // this.add(new ArrowHelper(n0, av, Number(isOutline), 'yellow'))
+        // this.add(new ArrowHelper(n1, av, Number(isOutline), 'blue'))
+        // this.add(new ArrowHelper(n0, bv, Number(isOutline), 'yellow'))
+        // this.add(new ArrowHelper(n1, bv, Number(isOutline), 'blue'))
+      }
       duplicateMap[b][a] = true
     })
+    console.log(edges)
 
     return edges
   }
+
   private _extractSoup(geometry: BufferGeometry): IEdgeArrays {
     const triangleCount = geometry.attributes.position.count
     const edgeMap = {}
@@ -157,6 +190,7 @@ export class OutlineMesh extends LineSegments {
     const vArray: number[] = []
     const n0Array: number[] = []
     const n1Array: number[] = []
+    const weldedVertices: number[] = []
 
     return { vArray, n0Array, n1Array }
   }
