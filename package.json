@@ -13,6 +13,10 @@
     "dist",
     "src"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pailhead/three-line-outlinegit"
+  },
   "author": "Dusan Bosnjak (pailhead)",
   "license": "MIT",
   "peerDependencies": {},
