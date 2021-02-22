@@ -1,12 +1,10 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import {
-  ArrowHelper,
   BufferAttribute,
   BufferGeometry,
+  Color,
   LineSegments,
   Mesh,
-  MeshBasicMaterial,
-  SphereBufferGeometry,
   Vector3,
 } from 'three'
 import { OutlineMaterial } from './OutlineMaterial'
@@ -30,6 +28,7 @@ export class OutlineMesh extends LineSegments {
     super(new BufferGeometry(), outlineMaterial)
     this._extractGeometry(mesh.geometry)
   }
+
   private _extractGeometry(geometry: BufferGeometry): void {
     const { vArray, n0Array, n1Array } = geometry.index
       ? this._extractIndexed(geometry)
@@ -39,6 +38,7 @@ export class OutlineMesh extends LineSegments {
     g.setAttribute('aN0', new BufferAttribute(new Float32Array(n0Array), 3))
     g.setAttribute('aN1', new BufferAttribute(new Float32Array(n1Array), 3))
   }
+
   private _extractIndexed(geometry: BufferGeometry): IEdgeArrays {
     const { weldedIndices, weldedVertices } = this._weldIndexed(
       geometry.index!,
@@ -62,6 +62,7 @@ export class OutlineMesh extends LineSegments {
     })
     return { vArray, n0Array, n1Array }
   }
+
   private _weldIndexed(
     indexBuffer: BufferAttribute,
     positionBuffer: BufferAttribute,
@@ -70,8 +71,6 @@ export class OutlineMesh extends LineSegments {
     const weldedVerticesMap: Record<number, number> = {}
     const weldedVertices: number[] = []
     const weldedIndices: number[] = []
-    const mm = new MeshBasicMaterial({ color: 'red' })
-    const _sg = new SphereBufferGeometry(0.1, 4, 2)
 
     for (let v = 0, c = 0; v < positionBuffer.count; v++) {
       const v3 = v * 3
@@ -88,13 +87,6 @@ export class OutlineMesh extends LineSegments {
           positionBuffer.array[v3 + 1],
           positionBuffer.array[v3 + 2],
         )
-        const m = new Mesh(_sg, mm)
-        m.position.set(
-          positionBuffer.array[v3],
-          positionBuffer.array[v3 + 1],
-          positionBuffer.array[v3 + 2],
-        )
-        this.add(m)
       }
       weldedVerticesMap[v] = map[key]
     }
@@ -106,6 +98,7 @@ export class OutlineMesh extends LineSegments {
 
     return { weldedVertices, weldedIndices }
   }
+
   private _extractEdgesFromIndex(
     indexBuffer: number[],
     positionBuffer: number[],
@@ -114,23 +107,15 @@ export class OutlineMesh extends LineSegments {
     const av = new Vector3()
     const bv = new Vector3()
     const cv = new Vector3()
-    const _sg = new SphereBufferGeometry(0.1, 4, 2)
-    const mm = new MeshBasicMaterial({ color: 'yellow' })
 
     for (let t = 0; t < indexBuffer.length; t += 3) {
       const normal = new Vector3()
       av.fromArray(positionBuffer, indexBuffer[t] * 3)
       bv.fromArray(positionBuffer, indexBuffer[t + 1] * 3)
       cv.fromArray(positionBuffer, indexBuffer[t + 2] * 3)
-      const m = new Mesh(_sg, mm)
-      m.position.add(av)
-      m.position.add(bv)
-      m.position.add(cv)
-      m.position.multiplyScalar(1 / 3)
-      this.add(m)
+
       normal.crossVectors(bv.sub(av), cv.sub(av))
       faceNormals.push(normal.normalize())
-      this.add(new ArrowHelper(normal, m.position))
     }
 
     const edgeFaceMap: Record<number, Record<number, number>> = {}
@@ -165,17 +150,9 @@ export class OutlineMesh extends LineSegments {
       const n1 = isOutline ? faceNormals[f1] : NULL_VECTOR
 
       edges.push({ a, b, n0, n1 })
-      // const av = new Vector3().fromArray(positionBuffer.array, a * 3)
-      // const bv = new Vector3().fromArray(positionBuffer.array, b * 3)
-      if (isOutline) {
-        // this.add(new ArrowHelper(n0, av, Number(isOutline), 'yellow'))
-        // this.add(new ArrowHelper(n1, av, Number(isOutline), 'blue'))
-        // this.add(new ArrowHelper(n0, bv, Number(isOutline), 'yellow'))
-        // this.add(new ArrowHelper(n1, bv, Number(isOutline), 'blue'))
-      }
       duplicateMap[b][a] = true
     })
-    console.log(edges)
+    // console.log(edges)
 
     return edges
   }
