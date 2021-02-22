@@ -3,6 +3,7 @@
 Three's instanced lines example ported to typescript
 
 ## Usage
+[![NPM](https://nodei.co/npm/three-line-outline.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/three-line-outline/)
 
 Something like this (see `/debugger`):
 
