@@ -1,7 +1,7 @@
 {
-  "name": "three-thick-lines",
-  "version": "0.0.14",
-  "description": "Three.js thick lines rewritten with typescript",
+  "name": "three-line-outline",
+  "version": "0.0.1",
+  "description": "Three.js outlines rendered with lines",
   "main": "dist/bundle.js",
   "types": "dist/index.d.ts",
   "scripts": {
