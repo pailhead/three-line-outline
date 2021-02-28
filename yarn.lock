@@ -5627,6 +5627,11 @@ text-table@^0.2.0:
   resolved "https://registry.yarnpkg.com/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
   integrity sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
 
+three-thick-lines@^0.0.19:
+  version "0.0.19"
+  resolved "https://registry.yarnpkg.com/three-thick-lines/-/three-thick-lines-0.0.19.tgz#e5b8d6c3883ec4b20b19ff1b40df5b044dabb9c9"
+  integrity sha512-T3sg5sbeEGTJbksVJJFoW37P4Rlrgl4qp5olqab+KVhgU3ndViwoItB7yQfc1xlRt3zdMQUkJJrPquACeWVspQ==
+
 three@^0.125.2:
   version "0.125.2"
   resolved "https://registry.yarnpkg.com/three/-/three-0.125.2.tgz#dcba12749a2eb41522e15212b919cd3fbf729b12"
