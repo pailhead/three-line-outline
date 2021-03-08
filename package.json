@@ -1,6 +1,6 @@
 {
   "name": "three-line-outline",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Three.js outlines rendered with lines",
   "main": "dist/bundle.js",
   "types": "dist/index.d.ts",
