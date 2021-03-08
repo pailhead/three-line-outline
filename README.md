@@ -1,6 +1,8 @@
-# three-thick-lines
+# three-line-outline
 
-Three's instanced lines example ported to typescript
+This is a geometric implementation of outlines for three.js. It's running in the vertex shader rather than pixel shader and shows/hides geometric lines if one adjacent face is facing away from the camera while the other faces towards.
+
+I found this useful when rendering mechanical parts for CAD viewers.
 
 ## Example
 
