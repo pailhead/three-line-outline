@@ -1,10 +1,13 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import {
+  ArrowHelper,
+  BoxBufferGeometry,
   BufferAttribute,
   BufferGeometry,
   Color,
   LineSegments,
   Mesh,
+  MeshBasicMaterial,
   Vector3,
 } from 'three'
 import { OutlineMaterial } from './OutlineMaterial'
@@ -19,6 +22,7 @@ interface IEdgeArrays {
   vArray: number[]
   n0Array: number[]
   n1Array: number[]
+  otherVertArray: number[]
 }
 const NULL_VECTOR = new Vector3()
 const WELD_FACTOR = 1000
@@ -30,13 +34,17 @@ export class OutlineMesh extends LineSegments {
   }
 
   private _extractGeometry(geometry: BufferGeometry): void {
-    const { vArray, n0Array, n1Array } = geometry.index
+    const { vArray, n0Array, n1Array, otherVertArray } = geometry.index
       ? this._extractIndexed(geometry)
       : this._extractSoup(geometry)
     const g = this.geometry as BufferGeometry
     g.setAttribute('position', new BufferAttribute(new Float32Array(vArray), 3))
     g.setAttribute('aN0', new BufferAttribute(new Float32Array(n0Array), 3))
     g.setAttribute('aN1', new BufferAttribute(new Float32Array(n1Array), 3))
+    g.setAttribute(
+      'aOtherVert',
+      new BufferAttribute(new Float32Array(otherVertArray), 4),
+    )
   }
 
   private _extractIndexed(geometry: BufferGeometry): IEdgeArrays {
@@ -48,19 +56,29 @@ export class OutlineMesh extends LineSegments {
     const vArray: number[] = []
     const n0Array: number[] = []
     const n1Array: number[] = []
+    const otherVertArray: number[] = []
 
-    const extract = (index: number, n0: Vector3, n1: Vector3) => {
-      const _index = index * 3
-      n0Array.push(n0.x, n0.y, n0.z)
-      n1Array.push(n1.x, n1.y, n1.z)
-      for (let i = 0; i < 3; i++) vArray.push(weldedVertices[_index + i])
+    const sg = new BoxBufferGeometry(0.1, 0.1, 0.1)
+    const sm = new MeshBasicMaterial({ color: 'red' })
+    for (let i = 0; i < weldedVertices.length / 3; i++) {
+      const m = new Mesh(sg, sm)
+      m.position.fromArray(weldedVertices, i * 3)
     }
-
-    edges.forEach(({ a, b, n0, n1 }) => {
+    edges.forEach(({ a, b, n0, n1 }, i) => {
+      const extract = (index: number, n0: Vector3, n1: Vector3) => {
+        const _index = index * 3
+        n0Array.push(...n0.toArray())
+        n1Array.push(...n1.toArray())
+        for (let i = 0; i < 3; i++) vArray.push(weldedVertices[_index + i])
+      }
       extract(a, n0, n1)
       extract(b, n0, n1)
+      for (let i = 0; i < 3; i++) otherVertArray.push(weldedVertices[b * 3 + i])
+      otherVertArray.push(0)
+      for (let i = 0; i < 3; i++) otherVertArray.push(weldedVertices[a * 3 + i])
+      otherVertArray.push(1)
     })
-    return { vArray, n0Array, n1Array }
+    return { vArray, n0Array, n1Array, otherVertArray }
   }
 
   private _weldIndexed(
@@ -108,12 +126,11 @@ export class OutlineMesh extends LineSegments {
     const bv = new Vector3()
     const cv = new Vector3()
 
-    for (let t = 0; t < indexBuffer.length; t += 3) {
+    for (let t = 0; t < indexBuffer.length; ) {
       const normal = new Vector3()
-      av.fromArray(positionBuffer, indexBuffer[t] * 3)
-      bv.fromArray(positionBuffer, indexBuffer[t + 1] * 3)
-      cv.fromArray(positionBuffer, indexBuffer[t + 2] * 3)
-
+      av.fromArray(positionBuffer, indexBuffer[t++] * 3)
+      bv.fromArray(positionBuffer, indexBuffer[t++] * 3)
+      cv.fromArray(positionBuffer, indexBuffer[t++] * 3)
       normal.crossVectors(bv.sub(av), cv.sub(av))
       faceNormals.push(normal.normalize())
     }
@@ -122,11 +139,11 @@ export class OutlineMesh extends LineSegments {
     const halfEdges: [number, number][] = []
 
     for (let t = 0; t < indexBuffer.length / 3; t++) {
-      const t3 = t * 3
-      for (let i = 0; i < 3; i++) {
-        const next = (i + 1) % 3
-        const a = indexBuffer[t3 + i]
-        const b = indexBuffer[t3 + next]
+      const offset = t * 3
+      for (let curr = 0; curr < 3; curr++) {
+        const next = (curr + 1) % 3
+        const a = indexBuffer[offset + curr]
+        const b = indexBuffer[offset + next]
         if (!edgeFaceMap[a]) edgeFaceMap[a] = {}
         edgeFaceMap[a][b] = t
         halfEdges.push([a, b])
@@ -150,9 +167,9 @@ export class OutlineMesh extends LineSegments {
       const n1 = isOutline ? faceNormals[f1] : NULL_VECTOR
 
       edges.push({ a, b, n0, n1 })
+      duplicateMap[a][b] = true
       duplicateMap[b][a] = true
     })
-    // console.log(edges)
 
     return edges
   }
@@ -167,8 +184,9 @@ export class OutlineMesh extends LineSegments {
     const vArray: number[] = []
     const n0Array: number[] = []
     const n1Array: number[] = []
-    const weldedVertices: number[] = []
+    const otherVertArray: number[] = []
+    // const weldedVertices: number[] = []
 
-    return { vArray, n0Array, n1Array }
+    return { vArray, n0Array, n1Array, otherVertArray }
   }
 }

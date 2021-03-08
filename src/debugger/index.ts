@@ -1,24 +1,28 @@
 import {
+  BoxBufferGeometry,
   Clock,
   CylinderBufferGeometry,
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
   Scene,
-  SphereBufferGeometry,
+  TorusKnotBufferGeometry,
   Vector2,
   WebGLRenderer,
 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { OutlineMaterial } from '../OutlineMaterial'
 import { OutlineMesh } from '../OutlineMesh'
+import * as dat from 'dat.gui'
+
+const gui = new dat.GUI()
 
 document.body.style.margin = '0'
 
 const clock = new Clock()
 const scene = new Scene()
 const camera = new PerspectiveCamera(60, 1, 1, 1000)
-const renderer = new WebGLRenderer()
+const renderer = new WebGLRenderer({ antialias: true })
 const resolution = new Vector2()
 document.body.appendChild(renderer.domElement)
 renderer.setClearColor(0xffffff)
@@ -37,33 +41,45 @@ const onResize = () => {
 onResize()
 window.addEventListener('resize', onResize)
 
-const pg = new SphereBufferGeometry(1, 32, 16)
+const bg = new BoxBufferGeometry(1, 1, 1)
 const cg = new CylinderBufferGeometry(1, 2, 2, 32, 1, false)
+const tg = new TorusKnotBufferGeometry(1, 0.1, 128, 32, 2, 3)
+
 const m = new MeshBasicMaterial({
   transparent: true,
-  opacity: 0.85,
+  opacity: 0.5,
   polygonOffset: true,
   polygonOffsetUnits: 2,
   polygonOffsetFactor: 1,
 })
-const pm = new Mesh(pg, m)
+
+gui.add(m, 'opacity', 0, 1)
+
+const pm = new Mesh(bg, m)
 const cm = new Mesh(cg, m)
+const tm = new Mesh(tg, m)
+
 const mat = new OutlineMaterial(60, true, '#000')
+gui.add(mat, 'angleThreshold', 0, 180)
+
 const po = new OutlineMesh(pm, mat)
 const co = new OutlineMesh(cm, mat)
+const to = new OutlineMesh(tm, mat)
 po.add(pm)
 co.add(cm)
+to.add(tm)
 
-po.position.x = 2
-co.position.x = -2
+po.position.x = 4
+co.position.x = -4
 scene.add(po)
 scene.add(co)
+scene.add(to)
 
 function animate() {
   const dt = clock.getDelta()
   requestAnimationFrame(animate)
   renderer.render(scene, camera)
-  co.rotation.x += dt
-  co.rotation.z += dt
+  to.rotation.x += dt
+  to.rotation.z += dt
 }
 animate()

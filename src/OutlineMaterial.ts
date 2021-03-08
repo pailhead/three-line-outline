@@ -18,7 +18,6 @@ export class OutlineMaterial extends ShaderMaterial {
     this.angleThreshold = _angleThreshold
     this.outline = outline
     this.color.setStyle(color)
-    console.log(this.uniforms)
   }
   set angleThreshold(degrees: number) {
     this._angleThreshold = degrees
