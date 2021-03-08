@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "webpack serve --open --config webpack.dev.js",
     "build": "webpack",
-    "test": "jest"
+    "test": "jest",
+    "build-example": "webpack --config webpack.example.js"
   },
   "files": [
     "dist",

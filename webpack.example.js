@@ -3,7 +3,7 @@ const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 module.exports = {
-  entry: './src/index.ts',
+  entry: './src/debugger/index.ts',
   mode: 'production',
   devtool: 'source-map',
   resolve: {
@@ -11,9 +11,7 @@ module.exports = {
   },
   output: {
     filename: 'bundle.js',
-    path: path.resolve(__dirname, 'dist'),
-    library: 'ThickLine',
-    libraryTarget: 'umd',
+    path: path.resolve(__dirname, 'example'),
   },
   module: {
     rules: [
@@ -28,19 +26,7 @@ module.exports = {
       },
     ],
   },
-  externals: {
-    // three: 'THREE',
-    three: {
-      root: 'THREE',
-      amd: 'three',
-      commonjs: 'three',
-      commonjs2: 'three',
-    },
-  },
   plugins: [
-    new webpack.ProvidePlugin({
-      THREE: 'three',
-    }),
     new HtmlWebpackPlugin({
       title: 'Debugger',
     }),
