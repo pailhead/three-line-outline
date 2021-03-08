@@ -4,6 +4,8 @@ This is a geometric implementation of outlines for three.js. It's running in the
 
 I found this useful when rendering mechanical parts for CAD viewers.
 
+This is WIP, currently works with indexed geometry only.
+
 ## Example
 
 https://dusanbosnjak.com/test/outline/
